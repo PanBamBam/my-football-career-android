@@ -62,6 +62,12 @@ jobs:
           if not all(checks.values()): raise SystemExit('Bundled game verification failed')
           PY
 
+      - name: Verify Android save-slot hotfix
+        run: |
+          grep -q '__mfcSaveSlotFixV105' app/src/main/java/com/myfootballcareer/game/NeutralCareerActivity.java
+          grep -q 'Zapisz teraz' app/src/main/java/com/myfootballcareer/game/NeutralCareerActivity.java
+          grep -q 'Utwórz kopię' app/src/main/java/com/myfootballcareer/game/NeutralCareerActivity.java
+
       - name: Prepare persistent development signing key
         run: base64 -d android-dev-keystore.b64 > android-dev.keystore
 
@@ -69,11 +75,11 @@ jobs:
         run: gradle :app:assembleRelease
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/release/app-release.apk My-Football-Career-1.0.4-Tester.apk
+        run: cp app/build/outputs/apk/release/app-release.apk My-Football-Career-1.0.5-Tester.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: My-Football-Career-1.0.4-Tester-Android
-          path: My-Football-Career-1.0.4-Tester.apk
+          name: My-Football-Career-1.0.5-Tester-Android
+          path: My-Football-Career-1.0.5-Tester.apk
           if-no-files-found: error
