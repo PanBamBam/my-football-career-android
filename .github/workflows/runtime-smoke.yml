@@ -24,6 +24,19 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Sanitize bundled game for smoke test
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/assets/index.html.html')
+          if not p.exists(): p = Path('app/src/main/assets/index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('value="Dawid Sadowski"', 'value="" placeholder="Wpisz imię i nazwisko"')
+          s = s.replace('<h2 id="displayName">Dawid Sadowski</h2>', '<h2 id="displayName">Zawodnik</h2>')
+          if 'Dawid Sadowski' in s: raise SystemExit('Personal default still present')
+          p.write_text(s, encoding='utf-8')
+          PY
+
       - name: Build debug APK
         run: gradle :app:assembleDebug
 
@@ -40,14 +53,29 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am force-stop com.myfootballcareer.game
             adb shell monkey -p com.myfootballcareer.game -c android.intent.category.LAUNCHER 1
-            sleep 12
+            sleep 30
             echo '=== PROCESS ==='
             adb shell pidof com.myfootballcareer.game || true
+            adb shell pidof com.myfootballcareer.game >/dev/null || (echo 'MFC process is not running after launch'; exit 1)
             echo '=== ACTIVITY ==='
-            adb shell dumpsys activity activities | grep -A 8 -B 3 com.myfootballcareer.game || true
-            echo '=== CRASH LOGS ==='
-            adb logcat -d -v brief AndroidRuntime:E chromium:E WebViewFactory:E ActivityManager:E '*:S' || true
-            if ! adb shell pidof com.myfootballcareer.game >/dev/null; then
-              echo 'MFC process is not running after launch'
-              exit 1
-            fi
+            adb shell dumpsys activity activities | grep -A 10 -B 3 com.myfootballcareer.game || true
+            adb shell dumpsys activity activities | grep -q 'com.myfootballcareer.game/.NeutralCareerActivity' || (echo 'MFC launcher activity is not active'; exit 1)
+            echo '=== MFC CRASH CHECK ==='
+            adb logcat -d -v brief | grep -E 'FATAL EXCEPTION|Process: com.myfootballcareer.game' > mfc-crash.txt || true
+            cat mfc-crash.txt || true
+            test ! -s mfc-crash.txt || (echo 'MFC fatal crash detected'; exit 1)
+            adb shell uiautomator dump /sdcard/mfc-window.xml >/dev/null 2>&1 || true
+            adb pull /sdcard/mfc-window.xml mfc-window.xml >/dev/null 2>&1 || true
+            adb exec-out screencap -p > mfc-runtime.png || true
+            echo 'MFC Android runtime smoke PASS'
+
+      - name: Upload runtime diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mfc-android-runtime-diagnostics
+          path: |
+            mfc-runtime.png
+            mfc-window.xml
+            mfc-crash.txt
+          if-no-files-found: ignore
