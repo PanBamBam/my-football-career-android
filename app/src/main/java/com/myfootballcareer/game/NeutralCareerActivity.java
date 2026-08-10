@@ -6,9 +6,9 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 
 /**
- * Android 1.0.3 launcher.
- * Keeps the 1.0.2 scroll hotfix and neutralizes any hard-coded personal name
- * shown only on the new-career creator screen.
+ * Android 1.0.4 tester launcher.
+ * Keeps the scroll hotfix and guarantees a neutral new-career name field.
+ * Existing career/save names are never modified.
  */
 public class NeutralCareerActivity extends ScrollActivity {
     private WebView gameWebView;
@@ -46,7 +46,7 @@ public class NeutralCareerActivity extends ScrollActivity {
         if (gameWebView == null) return;
         gameWebView.evaluateJavascript(
             "(function(){" +
-            "if(window.__mfcNeutralCareerNameV103){window.__mfcNeutralCareerNameV103.scan();return;}" +
+            "if(window.__mfcNeutralCareerNameV104){window.__mfcNeutralCareerNameV104.scan();return;}" +
             "function isCreator(){var t=(document.body&&document.body.innerText)||'';return t.indexOf('Twoja historia zaczyna się od marzenia')>=0&&t.indexOf('Nowa kariera zostanie zapisana')>=0;}" +
             "function findNameInput(){var labels=document.querySelectorAll('label,.label,[class*=\\\"label\\\"],h1,h2,h3,h4,div,span');" +
             "for(var i=0;i<labels.length;i++){var e=labels[i];if((e.textContent||'').trim()!=='Imię i nazwisko')continue;" +
@@ -54,10 +54,10 @@ public class NeutralCareerActivity extends ScrollActivity {
             "var n=e.nextElementSibling;while(n){var q=n.matches&&n.matches('input')?n:n.querySelector&&n.querySelector('input[type=\\\"text\\\"],input:not([type])');if(q)return q;n=n.nextElementSibling;}}" +
             "var inputs=document.querySelectorAll('input[type=\\\"text\\\"],input:not([type])');return inputs.length?inputs[0]:null;}" +
             "function scan(){if(!isCreator())return;var input=findNameInput();if(!input)return;input.placeholder='Wpisz imię i nazwisko';" +
-            "if(input.dataset.mfcNeutralized==='1')return;var v=(input.value||'').trim();if(v==='Dawid Sadowski'||v==='Dawid'){input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}" +
+            "var v=(input.value||'').trim();if(v==='Dawid Sadowski'||v==='Dawid'){input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}" +
             "input.dataset.mfcNeutralized='1';}" +
-            "var api={scan:scan};window.__mfcNeutralCareerNameV103=api;" +
-            "new MutationObserver(function(){scan();}).observe(document.documentElement,{subtree:true,childList:true});" +
+            "var api={scan:scan};window.__mfcNeutralCareerNameV104=api;" +
+            "new MutationObserver(function(){scan();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['value']});" +
             "scan();" +
             "})();", null);
     }
