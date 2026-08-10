@@ -12,6 +12,7 @@ android {
             storePassword 'mfc-dev-2026'
             keyAlias 'mfcdev'
             keyPassword 'mfc-dev-2026'
+            storeType 'PKCS12'
         }
     }
 
