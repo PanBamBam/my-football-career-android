@@ -6,6 +6,15 @@ android {
     namespace 'com.myfootballcareer.game'
     compileSdk 35
 
+    signingConfigs {
+        stableDev {
+            storeFile file('../android-dev.keystore')
+            storePassword 'mfc-dev-2026'
+            keyAlias 'mfcdev'
+            keyPassword 'mfc-dev-2026'
+        }
+    }
+
     defaultConfig {
         applicationId 'com.myfootballcareer.game'
         minSdk 24
@@ -20,7 +29,7 @@ android {
         }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.stableDev
         }
     }
 }
