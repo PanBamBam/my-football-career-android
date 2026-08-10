@@ -46,7 +46,6 @@ public class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setStatusBarColor(Color.rgb(7, 20, 28));
         getWindow().setNavigationBarColor(Color.rgb(7, 20, 28));
-        enterImmersiveMode();
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(7, 20, 28));
@@ -71,10 +70,14 @@ public class MainActivity extends Activity {
         } catch (Throwable t) {
             splash.setText("MY FOOTBALL CAREER\n\nNie udało się uruchomić Android System WebView.\nZaktualizuj Chrome / Android System WebView i uruchom aplikację ponownie.\n\n" + t.getClass().getSimpleName());
             setContentView(root);
+            root.post(this::enterImmersiveMode);
             return;
         }
 
         setContentView(root);
+        // Fullscreen dopiero po utworzeniu DecorView. Na Androidzie 15 wcześniejsze
+        // wywołanie WindowInsetsController powodowało crash podczas onCreate().
+        root.post(this::enterImmersiveMode);
         configureWebView();
         loadBundledGame();
     }
@@ -205,7 +208,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        enterImmersiveMode();
+        if (getWindow().peekDecorView() != null) enterImmersiveMode();
         if (webView != null) webView.onResume();
     }
 
@@ -216,14 +219,17 @@ public class MainActivity extends Activity {
     }
 
     private void enterImmersiveMode() {
+        View decor = getWindow().peekDecorView();
+        if (decor == null) return;
+
         if (Build.VERSION.SDK_INT >= 30) {
-            WindowInsetsController c = getWindow().getInsetsController();
+            WindowInsetsController c = decor.getWindowInsetsController();
             if (c != null) {
                 c.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
                 c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             }
         } else {
-            getWindow().getDecorView().setSystemUiVisibility(
+            decor.setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_FULLSCREEN |
                     View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
