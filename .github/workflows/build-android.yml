@@ -11,24 +11,69 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
+      - name: Sanitize bundled new-career defaults
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          candidates = [Path('app/src/main/assets/index.html.html'), Path('app/src/main/assets/index.html')]
+          found = False
+          for p in candidates:
+              if not p.exists():
+                  continue
+              found = True
+              s = p.read_text(encoding='utf-8')
+              s = s.replace('value="Dawid Sadowski"', 'value="" placeholder="Wpisz imię i nazwisko"')
+              s = s.replace('<h2 id="displayName">Dawid Sadowski</h2>', '<h2 id="displayName">Zawodnik</h2>')
+              if 'Dawid Sadowski' in s:
+                  raise SystemExit(f'Personal default still present in {p}')
+              p.write_text(s, encoding='utf-8')
+              print(f'Sanitized {p}')
+          if not found:
+              raise SystemExit('Bundled game HTML not found')
+          PY
+
+      - name: Verify bundled game
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/assets/index.html.html')
+          if not p.exists(): p = Path('app/src/main/assets/index.html')
+          s = p.read_text(encoding='utf-8')
+          checks = {
+              'SAVE_VERSION 189': 'const SAVE_VERSION = 189' in s or 'SAVE_VERSION=189' in s,
+              'neutral name placeholder': 'Wpisz imię i nazwisko' in s,
+              'no personal default': 'Dawid Sadowski' not in s,
+              'match engine': 'function startLiveMatch' in s,
+              'save system': 'function saveState' in s,
+          }
+          for k,v in checks.items(): print(k, 'OK' if v else 'FAIL')
+          if not all(checks.values()): raise SystemExit('Bundled game verification failed')
+          PY
+
       - name: Prepare persistent development signing key
         run: base64 -d android-dev-keystore.b64 > android-dev.keystore
+
       - name: Build installable APK
         run: gradle :app:assembleRelease
+
       - name: Rename APK
-        run: cp app/build/outputs/apk/release/app-release.apk My-Football-Career-1.0.3.apk
+        run: cp app/build/outputs/apk/release/app-release.apk My-Football-Career-1.0.4-Tester.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: My-Football-Career-1.0.3-Android
-          path: My-Football-Career-1.0.3.apk
+          name: My-Football-Career-1.0.4-Tester-Android
+          path: My-Football-Career-1.0.4-Tester.apk
           if-no-files-found: error
