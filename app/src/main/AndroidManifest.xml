@@ -9,7 +9,7 @@
         android:icon="@drawable/mfc_icon"
         android:roundIcon="@drawable/mfc_icon">
         <activity
-            android:name=".ScrollActivity"
+            android:name=".NeutralCareerActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
